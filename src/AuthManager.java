@@ -1,4 +1,5 @@
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -36,7 +37,7 @@ public class AuthManager {
             } else {
                 users.setProperty(username, password);
                 // Save to the properties file (to persist the new user)
-                FileUtils.saveProperties("config/users.properties", users);
+                saveProperties("config/users.properties", users);
                 return true; // User registered successfully
             }
         } catch (IOException e) {
@@ -44,4 +45,11 @@ public class AuthManager {
         }
         return false;
     }
+
+    private static void saveProperties(String filePath, Properties properties) throws IOException {
+        try (FileOutputStream outputStream = new FileOutputStream(filePath)) {
+            properties.store(outputStream, null);
+        }
+    }
+
 }

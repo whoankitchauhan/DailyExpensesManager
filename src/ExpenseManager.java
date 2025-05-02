@@ -2,6 +2,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class ExpenseManager {
@@ -89,8 +91,15 @@ public class ExpenseManager {
             System.out.print("Enter amount: ");
             double amount = Double.parseDouble(scanner.nextLine().trim());
 
+            System.out.print("Enter description (optional): ");
+            String description = scanner.nextLine().trim();
+
+            // Format the time to "HH:mm:ss"
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+            String time = LocalTime.now().format(formatter); // Time when expense is added
+
             FileWriter writer = new FileWriter(filePath, true); // append mode
-            writer.write(category + " - " + amount + "\n");
+            writer.write(category + " | " + amount + " | " + description + " | " + time + "\n");
             writer.close();
 
             System.out.println("Expense added successfully!");
@@ -99,15 +108,6 @@ public class ExpenseManager {
         } catch (NumberFormatException e) {
             System.out.println("Invalid amount format. Please enter a number.");
         }
-        String userBudgetStr = budgets.getProperty(username);
-        if (userBudgetStr != null) {
-            double budget = Double.parseDouble(userBudgetStr);
-            double totalToday = calculateTotalInternal(); // helper function
-            if (totalToday > budget) {
-                System.out.println("Alert: You've crossed your daily budget of " + budget + "!");
-            }
-        }
-
     }
 
     private void updateExpense(Scanner scanner) {
@@ -132,18 +132,21 @@ public class ExpenseManager {
                 return;
             }
 
-            // Ask for new category and amount
             System.out.print("Enter new category: ");
             String newCategory = scanner.nextLine();
+
             System.out.print("Enter new amount: ");
             double newAmount = Double.parseDouble(scanner.nextLine().trim());
 
-            // Update expense line
-            String newLine = newCategory + "," + newAmount;
-            lines.set(index, newLine);
+            System.out.print("Enter new description: ");
+            String newDescription = scanner.nextLine();
 
-            // Write updated expenses to file
+            String newTime = LocalTime.now().toString();
+            String updatedLine = newCategory + " | " + newAmount + " | " + newDescription + " | " + newTime;
+
+            lines.set(index, updatedLine);
             Files.write(Paths.get(filePath), lines);
+
             System.out.println("Expense updated successfully.");
 
         } catch (IOException | NumberFormatException e) {
@@ -200,13 +203,16 @@ public class ExpenseManager {
             System.out.println("Today's Expenses:\n");
 
             while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length == 2) {
+                String[] parts = line.split(" \\| ");
+                if (parts.length == 4) {
                     String category = parts[0].trim();
                     double amount = Double.parseDouble(parts[1].trim());
+                    String description = parts[2].trim();
+                    String time = parts[3].trim();
 
                     // Format and display
-                    System.out.printf("%d. Category: %-10s | Amount: %.2f%n", lineNumber, category, amount);
+                    System.out.printf("%d. Category: %-10s | Amount: %.2f | Description: %-20s | Time: %s%n",
+                            lineNumber, category, amount, description, time);
                     lineNumber++;
                 }
             }
@@ -231,19 +237,32 @@ public class ExpenseManager {
 
             double total = 0;
             for (String line : lines) {
-                // Assuming the line is in the format "category,amount"
-                String[] parts = line.split(" - ");
-                if (parts.length == 2) {
+                String[] parts = line.split(" \\| ");
+                if (parts.length == 4) {
                     try {
-                        double amount = Double.parseDouble(parts[1]);
+                        double amount = Double.parseDouble(parts[1].trim());
                         total += amount;
                     } catch (NumberFormatException e) {
-                        System.out.println("Error parsing amount: " + e.getMessage());
+                        System.out.println("Skipping malformed line: " + line);
                     }
                 }
             }
 
-            System.out.println("Total expense for today: " + total);
+            System.out.printf("Total expense for today: ₹%.2f%n", total);
+
+            // Budget alert
+            String budgetStr = budgets.getProperty(username);
+            if (budgetStr != null) {
+                try {
+                    double budget = Double.parseDouble(budgetStr);
+                    if (total > budget) {
+                        System.out.println("Alert: You have exceeded your daily budget of ₹" + budget);
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("Warning: Invalid budget format.");
+                }
+            }
+
         } catch (IOException e) {
             System.out.println("Error calculating total expense: " + e.getMessage());
         }
@@ -254,32 +273,20 @@ public class ExpenseManager {
             System.out.print("Enter your daily budget amount: ");
             String input = scanner.nextLine().trim();
             double budget = Double.parseDouble(input);
+
             budgets.setProperty(username, String.valueOf(budget));
 
+            // Save to file
             FileOutputStream out = new FileOutputStream(budgetFile);
-            budgets.store(out, null);
+            budgets.store(out, "User budgets");
             out.close();
 
-            System.out.println("Budget set to " + budget);
-        } catch (IOException | NumberFormatException e) {
-            System.out.println("Error setting budget. Please try again.");
+            System.out.println("Daily budget set to ₹" + budget);
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input. Please enter a valid number.");
+        } catch (IOException e) {
+            System.out.println("Error saving budget: " + e.getMessage());
         }
-    }
-
-    private double calculateTotalInternal() {
-        double total = 0.0;
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(" - ");
-                if (parts.length == 2) {
-                    total += Double.parseDouble(parts[1]);
-                }
-            }
-        } catch (IOException | NumberFormatException e) {
-            // Ignore silently for internal calc
-        }
-        return total;
     }
 
     private void viewHistoryMenu(Scanner scanner) {
@@ -349,19 +356,20 @@ public class ExpenseManager {
             String csvPath = "export/" + fileName;
 
             BufferedWriter writer = new BufferedWriter(new FileWriter(csvPath));
-            writer.write("Category,Amount\n"); // CSV header
+            writer.write("Category,Amount,Description,Time\n"); // CSV header
 
             for (String line : lines) {
-                String[] parts = line.split(" - ");
-                if (parts.length == 2) {
-                    writer.write(parts[0].trim() + "," + parts[1].trim() + "\n");
+                String[] parts = line.split(" \\| ");
+                if (parts.length == 4) {
+                    writer.write(parts[0].trim() + "," + parts[1].trim() + "," + parts[2].trim() + "," + parts[3].trim()
+                            + "\n");
                 }
             }
             writer.close();
 
-            System.out.println("\u001B[32mExpenses exported successfully to: " + csvPath + "\u001B[0m");
+            System.out.println("Expenses exported successfully to: " + csvPath);
         } catch (IOException e) {
-            System.out.println("\u001B[31mError exporting to CSV: " + e.getMessage() + "\u001B[0m");
+            System.out.println("Error exporting to CSV: " + e.getMessage());
         }
     }
 
