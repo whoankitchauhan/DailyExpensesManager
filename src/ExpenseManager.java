@@ -248,7 +248,7 @@ public class ExpenseManager {
                 }
             }
 
-            System.out.printf("Total expense for today: ₹%.2f%n", total);
+            System.out.printf("Total expense for today: %.2f%n", total);
 
             // Budget alert
             String budgetStr = budgets.getProperty(username);
@@ -281,7 +281,7 @@ public class ExpenseManager {
             budgets.store(out, "User budgets");
             out.close();
 
-            System.out.println("Daily budget set to ₹" + budget);
+            System.out.println("Daily budget set to " + budget);
         } catch (NumberFormatException e) {
             System.out.println("Invalid input. Please enter a valid number.");
         } catch (IOException e) {
