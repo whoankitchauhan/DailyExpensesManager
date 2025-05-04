@@ -1,56 +1,84 @@
+import java.time.LocalDate;
 import java.util.Scanner;
 
 public class Main {
-
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
+        boolean exitApp = false;
 
-        System.out.println("Welcome to Daily Expenses Manager");
+        displayWelcomeBanner();
 
-        // User login or sign-up
-        boolean isAuthenticated = false;
-        while (!isAuthenticated) {
-            System.out.println("Enter 1 to Login or 2 to Sign Up:");
-            int choice = scanner.nextInt();
-            scanner.nextLine(); // Consume newline character
+        while (!exitApp) {
+            displayMainMenu();
+            String choice = scanner.nextLine().trim();
 
-            if (choice == 1) {
-                // Login
-                System.out.print("Enter username: ");
-                String username = scanner.nextLine();
-                System.out.print("Enter password: ");
-                String password = scanner.nextLine();
+            switch (choice) {
+                case "1":
+                    handleLogin(scanner); // Handle user login
+                    break;
 
-                isAuthenticated = AuthManager.authenticateUser(username, password);
-                if (isAuthenticated) {
-                    System.out.println("Login successful!");
-                    // Proceed to the expense management
-                    // Call ExpenseManager or any other features
-                    ExpenseManager expenseManager = new ExpenseManager(username);
-                    expenseManager.showMenu();
+                case "2":
+                    handleRegistration(scanner); // Handle user registration
+                    break;
 
-                } else {
-                    System.out.println("Invalid username or password. Try again.");
-                }
+                case "3":
+                    exitApp = true;
+                    System.out.println("Exiting Daily Expenses Manager. Have a great day!");
+                    break;
 
-            } else if (choice == 2) {
-                // Sign Up
-                System.out.print("Enter a new username: ");
-                String newUsername = scanner.nextLine();
-                System.out.print("Enter a password: ");
-                String newPassword = scanner.nextLine();
-
-                boolean isRegistered = AuthManager.registerUser(newUsername, newPassword);
-                if (isRegistered) {
-                    System.out.println("Sign Up successful! You can now log in.");
-                } else {
-                    System.out.println("Username already exists. Try a different one.");
-                }
-            } else {
-                System.out.println("Invalid choice. Try again.");
+                default:
+                    System.out.println("Invalid choice. Please enter 1, 2, or 3.");
             }
         }
 
         scanner.close();
+    }
+
+    // Displays the welcome banner at the start of the program
+    private static void displayWelcomeBanner() {
+        System.out.println("Welcome to Daily Expenses Manager");
+        System.out.println("----------------------------------------");
+    }
+
+    // Displays the main menu with available options
+    private static void displayMainMenu() {
+        System.out.println("\n========== Main Menu ==========");
+        System.out.println("1. Login");
+        System.out.println("2. Register");
+        System.out.println("3. Exit");
+        System.out.print("Enter your choice: ");
+    }
+
+    // Authenticates the user and launches the expense manager if successful
+    private static void handleLogin(Scanner scanner) {
+        System.out.print("Username: ");
+        String username = scanner.nextLine();
+        System.out.print("Password: ");
+        String password = scanner.nextLine();
+
+        if (AuthManager.authenticateUser(username, password)) {
+            System.out.println("\nLogin successful!");
+            LocalDate today = LocalDate.now();
+            System.out.println("Welcome, " + username + " | Date: " + today);
+
+            ExpenseManager expenseManager = new ExpenseManager(username);
+            expenseManager.showMenu();
+        } else {
+            System.out.println("Invalid username or password. Try again.");
+        }
+    }
+
+    // Registers a new user by saving their credentials
+    private static void handleRegistration(Scanner scanner) {
+        System.out.print("Choose a username: ");
+        String newUser = scanner.nextLine();
+        System.out.print("Choose a password: ");
+        String newPass = scanner.nextLine();
+
+        if (AuthManager.registerUser(newUser, newPass)) {
+            System.out.println("Registered successfully! Please log in.");
+        } else {
+            System.out.println("Username already exists. Try a different one.");
+        }
     }
 }
