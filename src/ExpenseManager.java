@@ -140,7 +140,8 @@ public class ExpenseManager {
             System.out.print("Enter new description: ");
             String newDescription = scanner.nextLine();
 
-            String newTime = LocalTime.now().toString();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+            String newTime = LocalTime.now().format(formatter); // Time when expense is added
             String updatedLine = newCategory + " | " + newAmount + " | " + newDescription + " | " + newTime;
 
             lines.set(index, updatedLine);
