@@ -82,7 +82,6 @@ public class ExpenseManager {
         }
     }
 
-    // --- We’ll implement these methods in the next step ---
     private void addExpense(Scanner scanner) {
         try {
             System.out.print("Enter expense category (e.g., Food, Travel): ");
