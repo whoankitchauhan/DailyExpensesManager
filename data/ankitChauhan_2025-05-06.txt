@@ -1,0 +1,4 @@
+Ticket | 950.0 | Movie | 17:35:01
+Food | 1500.0 | CP | 17:33:59
+Fee | 150000.0 | BTECH VIPS | 17:34:17
+Party | 500.0 | Birthday | 17:36:06
